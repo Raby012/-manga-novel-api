@@ -52,7 +52,7 @@ export class AsuraScraper {
       const href  = $(el).attr("href") ?? "";
       const slug  = href.replace(BASE, "").replace(/^\//, "");
       const title = $(el).find("span, h3, p").first().text().trim()
-                 || $(el).find("img").attr("alt") ?? "";
+                 || ($(el).find("img").attr("alt") ?? "");
       const cover = $(el).find("img").attr("src") ?? "";
       const status  = $(el).find("[class*='status']").text().trim();
       const chapter = $(el).find("[class*='chapter'], [class*='Chapter']").text().trim();
@@ -100,13 +100,13 @@ export class AsuraScraper {
     $("[class*='info'] div, .series-info li, .info-item").each((_i, el) => {
       const text  = $(el).text().trim();
       const lower = text.toLowerCase();
-      if (lower.includes("status:"))   status  = text.split(":").slice(1).join(":").trim();
-      if (lower.includes("type:"))     typeRaw = text.split(":").slice(1).join(":").trim();
-      if (lower.includes("author:"))   authors.push(text.split(":").slice(1).join(":").trim());
+      if (lower.includes("status:"))   { status  = text.split(":").slice(1).join(":").trim(); }
+      if (lower.includes("type:"))     { typeRaw = text.split(":").slice(1).join(":").trim(); }
+      if (lower.includes("author:"))   { authors.push(text.split(":").slice(1).join(":").trim()); }
       if (lower.includes("genre") || lower.includes("tag")) {
-        $(el).find("a, span.genre").each((_j, g) => genres.push($(g).text().trim()));
+        $(el).find("a, span.genre").each((_j, g) => { genres.push($(g).text().trim()); });
       }
-      if (lower.includes("rating:"))   rating  = text.split(":").slice(1).join(":").trim();
+      if (lower.includes("rating:"))   { rating  = text.split(":").slice(1).join(":").trim(); }
     });
 
     return {
@@ -130,7 +130,7 @@ export class AsuraScraper {
       const href   = $(el).attr("href") ?? "";
       const chSlug = href.replace(BASE, "").replace(/^\//, "");
       const num    = $(el).find("[class*='chapter-number'], strong").text().trim()
-                  || $(el).text().match(/chapter\s*([\d.]+)/i)?.[1] ?? "";
+                  || ($(el).text().match(/chapter\s*([\d.]+)/i)?.[1] ?? "");
       const title  = $(el).text().trim();
       const date   = $(el).closest("li, div").find("time, .date").text().trim();
       if (chSlug) chapters.push({ slug: chSlug, number: num, title, date });
@@ -153,4 +153,4 @@ export class AsuraScraper {
 
     return pages;
   }
-      }
+}
