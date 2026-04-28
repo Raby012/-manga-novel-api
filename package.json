@@ -10,6 +10,13 @@
     "lint": "eslint 'src/**/*.ts'",
     "type-check": "tsc --noEmit"
   },
+
+  "scripts": {
+  "build": "tsc",
+  "start": "node dist/src/server.js",
+  "dev": "tsx watch src/server.ts"
+  }
+  
   "dependencies": {
     "@consumet/extensions": "^0.2.8",
     "cheerio": "^1.0.0",
