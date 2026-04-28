@@ -1,26 +1,8 @@
-/**
- * server.ts — Express application entry point
- *
- * DATA FLOW (how CORS and Cloudflare are defeated):
- *
- *   Browser (React frontend)
- *     → fetch("http://localhost:3001/api/manga/search?q=...")
- *       CORS headers on OUR server allow this ✓
- *           ↓
- *   This Express server (Node.js — not a browser)
- *     → calls api.comick.io / api.mangadex.org / weebcentral.com etc.
- *       via got-scraping with Chrome TLS fingerprint
- *       Cloudflare thinks it's a real browser → lets it through ✓
- *           ↓
- *   Target sites: ComicK, MangaDex, WeebCentral, AsuraScans, NovelFull
- */
-
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { corsMiddleware } from "./middleware/corsMiddleware";
 import { errorHandler }   from "./middleware/errorHandler";
-import { requestLogger }  from "./middleware/requestLogger";
 import { mangaRouter }    from "./routes/manga";
 import { novelRouter }    from "./routes/novels";
 import { proxyRouter }    from "./proxy/imageProxy";
@@ -28,14 +10,17 @@ import { config }         from "../config/config";
 
 const app = express();
 
+// ── Inline request logger (no separate file needed) ───────────────────────────
+function requestLogger(req: Request, _res: Response, next: NextFunction) {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  next();
+}
+
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Custom CORS middleware — see src/middleware/corsMiddleware.ts for full explanation
 app.use(corsMiddleware);
 
-// API rate limiter
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 150,
@@ -45,7 +30,6 @@ const apiLimiter = rateLimit({
   skip: (req) => req.path === "/api/health",
 });
 
-// Stricter limit for image proxy
 const imageLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 300,
