@@ -1,7 +1,38 @@
 import * as cheerio from "cheerio";
 import { fetchHTML } from "../utils/httpClient";
-import type { NovelInfo, NovelSearchResult, ChapterListResult, ChapterContent } from "../types/novel";
 
+// ── Types inlined (no separate types file needed) ─────────────────────────────
+export interface NovelSearchResult {
+  title: string;
+  slug: string;
+  cover: string;
+  latestChapter: string;
+}
+
+export interface NovelInfo {
+  title: string;
+  slug: string;
+  cover: string;
+  author: string;
+  status: string;
+  genres: string[];
+  description: string;
+}
+
+export interface ChapterListResult {
+  chapters: { title: string; slug: string; date: string }[];
+  page: number;
+  totalPages: number;
+}
+
+export interface ChapterContent {
+  title: string;
+  content: string;
+  prevChapter: string | null;
+  nextChapter: string | null;
+}
+
+// ── Scraper ───────────────────────────────────────────────────────────────────
 export class NovelFullScraper {
   private readonly baseUrl = "https://novelfull.com";
 
@@ -46,7 +77,6 @@ export class NovelFullScraper {
     const url = `${this.baseUrl}/${slug}.html?page=${page}&per-page=50`;
     const html = await fetchHTML(url);
     const $ = cheerio.load(html);
-
     const chapters: { title: string; slug: string; date: string }[] = [];
 
     $(".list-chapter .row a").each((_i, el) => {
