@@ -1,22 +1,14 @@
 {
   "name": "manga-novel-api",
   "version": "2.0.0",
-  "description": "Proxy API server for Manga/Manhwa/Manhua (ComicK, MangaDex, WeebCentral, AsuraScans) and Light Novels (NovelFull). Bypasses CORS and Cloudflare using got-scraping.",
+  "description": "Proxy API for Manga/Manhwa/Manhua and Light Novels. Bypasses CORS and Cloudflare using got-scraping.",
   "main": "dist/src/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/src/server.js",
-    "lint": "eslint 'src/**/*.ts'",
     "type-check": "tsc --noEmit"
   },
-
-  "scripts": {
-  "build": "tsc",
-  "start": "node dist/src/server.js",
-  "dev": "tsx watch src/server.ts"
-  }
-  
   "dependencies": {
     "@consumet/extensions": "^0.2.8",
     "cheerio": "^1.0.0",
