@@ -10,9 +10,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@consumet/extensions": "^1.8.8",
     "cheerio": "^1.0.0",
-    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
@@ -20,13 +18,12 @@
     "helmet": "^7.1.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
     "tsx": "^4.15.7",
     "typescript": "^5.4.5"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }
