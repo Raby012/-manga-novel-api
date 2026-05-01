@@ -1,6 +1,6 @@
 import { fetchJSON } from "../utils/httpClient";
 
-const BASE = "https://api.comick.io";
+const BASE = "https://api.comick.dev";
 
 export type ContentType = "manga" | "manhwa" | "manhua" | "unknown";
 
