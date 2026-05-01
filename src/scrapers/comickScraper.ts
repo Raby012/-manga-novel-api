@@ -52,8 +52,6 @@ function mapHit(hit: any): ComicSearchResult {
   };
 }
 
-// ComicK API headers — these must look like a real browser hitting their site
-// tachiyomi=true was previously used but CF started flagging it
 const COMICK_HEADERS = {
   Origin:  "https://comick.io",
   Referer: "https://comick.io/",
@@ -69,7 +67,6 @@ export class ComickScraper {
       q:     query,
       limit: String(opts.limit ?? 20),
       page:  String(opts.page  ?? 1),
-      // removed tachiyomi=true — ComicK's CF now flags this param
     });
 
     const countryMap: Record<string, string> = {
@@ -81,7 +78,8 @@ export class ComickScraper {
 
     const data = await fetchJSON<any[]>(
       `${BASE}/v1.0/search?${params}`,
-      COMICK_HEADERS.Referer
+      COMICK_HEADERS.Referer,
+      true
     );
     return (data ?? []).map(mapHit);
   }
@@ -99,7 +97,8 @@ export class ComickScraper {
     }
     const data = await fetchJSON<any[]>(
       `${BASE}/v1.0/comic?${params}`,
-      COMICK_HEADERS.Referer
+      COMICK_HEADERS.Referer,
+      true
     );
     return (data ?? []).map(mapHit);
   }
@@ -107,7 +106,8 @@ export class ComickScraper {
   async fetchComicInfo(slug: string): Promise<ComicInfo> {
     const data = await fetchJSON<any>(
       `${BASE}/comic/${slug}`,
-      COMICK_HEADERS.Referer
+      COMICK_HEADERS.Referer,
+      true
     );
     const comic = data?.comic ?? data;
     const base  = mapHit(comic);
@@ -132,7 +132,8 @@ export class ComickScraper {
     });
     const data = await fetchJSON<any>(
       `${BASE}/comic/${hid}/chapters?${params}`,
-      COMICK_HEADERS.Referer
+      COMICK_HEADERS.Referer,
+      true
     );
     const chapters: ComicChapter[] = (data?.chapters ?? []).map((c: any) => ({
       hid:         c.hid,
@@ -148,7 +149,8 @@ export class ComickScraper {
   async fetchChapterPages(chapterHid: string): Promise<ChapterPage[]> {
     const data = await fetchJSON<any>(
       `${BASE}/chapter/${chapterHid}`,
-      COMICK_HEADERS.Referer
+      COMICK_HEADERS.Referer,
+      true
     );
     return (data?.chapter?.md_images ?? []).map((img: any) => ({
       url:    `https://meo.comick.pictures/${img.b2key}`,
