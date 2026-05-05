@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
-import { asyncWrapper }          from "../utils/asyncWrapper";
-import { ComickScraper }         from "../scrapers/comickScraper";
-import { MangaDexScraper }       from "../scrapers/mangaDexScraper";
-import { WeebCentralScraper }    from "../scrapers/weebCentralScraper";
-import { AsuraScraper }          from "../scrapers/asuraScraper";
-import { aggregateChapters }     from "../utils/chapterAggregator";
+import { asyncWrapper }       from "../utils/asyncWrapper";
+import { ComickScraper }      from "../scrapers/comickScraper";
+import { MangaDexScraper }    from "../scrapers/mangaDexScraper";
+import { WeebCentralScraper } from "../scrapers/weebCentralScraper";
+import { AsuraScraper }       from "../scrapers/asuraScraper";
+import { aggregateChapters }  from "../utils/chapterAggregator";
 
 export const mangaRouter = Router();
 
@@ -14,34 +14,33 @@ const weebcentral = new WeebCentralScraper();
 const asura       = new AsuraScraper();
 
 type Source = "comick" | "mangadex" | "weebcentral" | "asura";
-const VALID_SOURCES: Source[] = ["comick", "mangadex", "weebcentral", "asura"];
+const VALID: Source[] = ["comick", "mangadex", "weebcentral", "asura"];
 
-function getSource(req: Request): Source {
+function src(req: Request): Source {
   const s = String(req.query.source ?? "mangadex").toLowerCase();
-  return VALID_SOURCES.includes(s as Source) ? (s as Source) : "mangadex";
+  return VALID.includes(s as Source) ? (s as Source) : "mangadex";
 }
 
-// ── GET /api/manga/sources ────────────────────────────────────────────────────
+// GET /api/manga/sources
 mangaRouter.get("/sources", (_req, res) => {
   res.json({
     sources: [
-      { id: "comick",      name: "ComicK",      types: ["manga","manhwa","manhua"] },
-      { id: "mangadex",   name: "MangaDex",    types: ["manga","manhwa","manhua"] },
-      { id: "weebcentral",name: "WeebCentral", types: ["manga","manhwa","manhua"] },
-      { id: "asura",      name: "AsuraScans",  types: ["manga","manhwa","manhua"] },
+      { id: "comick",       name: "ComicK",      types: ["manga","manhwa","manhua"] },
+      { id: "mangadex",    name: "MangaDex",    types: ["manga","manhwa","manhua"] },
+      { id: "weebcentral", name: "WeebCentral", types: ["manga","manhwa","manhua"] },
+      { id: "asura",       name: "AsuraScans",  types: ["manga","manhwa","manhua"] },
     ],
   });
 });
 
-// ── GET /api/manga/search ─────────────────────────────────────────────────────
+// GET /api/manga/search
 mangaRouter.get("/search", asyncWrapper(async (req: Request, res: Response) => {
   const query = String(req.query.q ?? "").trim();
   if (!query) return res.status(400).json({ error: "'q' is required." });
-  const source = getSource(req);
+  const source = src(req);
   const type   = (req.query.type as any) ?? undefined;
   const limit  = Math.min(Number(req.query.limit ?? 20), 100);
   const page   = Math.max(Number(req.query.page  ?? 1),  1);
-
   let results;
   switch (source) {
     case "comick":      results = await comick.search(query, { type, limit, page }); break;
@@ -52,13 +51,12 @@ mangaRouter.get("/search", asyncWrapper(async (req: Request, res: Response) => {
   res.json({ source, query, results });
 }));
 
-// ── GET /api/manga/trending ───────────────────────────────────────────────────
+// GET /api/manga/trending
 mangaRouter.get("/trending", asyncWrapper(async (req: Request, res: Response) => {
-  const source = getSource(req);
+  const source = src(req);
   const type   = (req.query.type as any) ?? undefined;
   const page   = Math.max(Number(req.query.page  ?? 1), 1);
   const limit  = Math.min(Number(req.query.limit ?? 20), 100);
-
   let results;
   switch (source) {
     case "comick":   results = await comick.trending(type, page); break;
@@ -68,9 +66,9 @@ mangaRouter.get("/trending", asyncWrapper(async (req: Request, res: Response) =>
   res.json({ source, results });
 }));
 
-// ── GET /api/manga/:id ────────────────────────────────────────────────────────
+// GET /api/manga/:id
 mangaRouter.get("/:id", asyncWrapper(async (req: Request, res: Response) => {
-  const source = getSource(req);
+  const source = src(req);
   const { id } = req.params;
   let info;
   switch (source) {
@@ -82,28 +80,41 @@ mangaRouter.get("/:id", asyncWrapper(async (req: Request, res: Response) => {
   res.json({ source, ...info });
 }));
 
-// ── GET /api/manga/:id/chapters ───────────────────────────────────────────────
-// When source=mangadex, automatically aggregates from MangaDex + ComicK
-// so licensed titles that have 0 chapters on MangaDex still return chapters
-// from ComicK. No source switching needed on the frontend.
+// GET /api/manga/:id/chapters
+// For mangadex: aggregates MangaDex + ComicK automatically
+// Pass ?title= and ?altTitles= (comma-separated) for best ComicK matching
 mangaRouter.get("/:id/chapters", asyncWrapper(async (req: Request, res: Response) => {
-  const source = getSource(req);
-  const { id } = req.params;
-  const lang   = String(req.query.lang  ?? "en");
-  const page   = Math.max(Number(req.query.page  ?? 1), 1);
-  const limit  = Math.min(Number(req.query.limit ?? 96), 500);
-  const title  = String(req.query.title ?? "");
+  const source    = src(req);
+  const { id }    = req.params;
+  const lang      = String(req.query.lang  ?? "en");
+  const page      = Math.max(Number(req.query.page  ?? 1), 1);
+  const limit     = Math.min(Number(req.query.limit ?? 96), 500);
+  const title     = String(req.query.title ?? "");
+  // altTitles: comma-separated English alternative titles from MangaDex
+  const altTitles = String(req.query.altTitles ?? "")
+    .split(",").map(t => t.trim()).filter(Boolean);
 
-  // MangaDex: use aggregator to pull from MangaDex + ComicK simultaneously
   if (source === "mangadex") {
+    // If no title passed, fetch manga info first to get all title variants
+    let searchTitle  = title;
+    let searchAlts   = altTitles;
+
+    if (!searchTitle) {
+      try {
+        const info = await mangadex.fetchMangaInfo(id);
+        searchTitle = info.title;
+        // MangaDex description field sometimes has english title hints
+      } catch { /* use empty */ }
+    }
+
     const result = await aggregateChapters({
       mangadexId: id,
-      title,       // pass title so ComicK can search for it
+      title:      searchTitle,
+      altTitles:  searchAlts,
       lang,
     });
 
-    // Apply pagination to the merged result
-    const start    = (page - 1) * limit;
+    const start     = (page - 1) * limit;
     const paginated = result.chapters.slice(start, start + limit);
     return res.json({
       source:   "aggregated",
@@ -114,7 +125,7 @@ mangaRouter.get("/:id/chapters", asyncWrapper(async (req: Request, res: Response
     });
   }
 
-  // Other sources: direct fetch
+  // Non-MangaDex sources — direct fetch
   let result;
   switch (source) {
     case "comick":
@@ -132,12 +143,11 @@ mangaRouter.get("/:id/chapters", asyncWrapper(async (req: Request, res: Response
   res.json({ source, ...result });
 }));
 
-// ── GET /api/manga/:id/chapters/:chapterId/pages ──────────────────────────────
+// GET /api/manga/:id/chapters/:chapterId/pages
 mangaRouter.get("/:id/chapters/:chapterId/pages", asyncWrapper(async (req: Request, res: Response) => {
-  const source    = getSource(req);
   const { chapterId } = req.params;
-  const chSrc     = String(req.query.chapterSource ?? source); // chapters store their own source
-
+  // chapterSource tells us which CDN the chapter belongs to
+  const chSrc = String(req.query.chapterSource ?? req.query.source ?? "mangadex");
   let pages;
   switch (chSrc) {
     case "comick":      pages = await comick.fetchChapterPages(chapterId); break;
